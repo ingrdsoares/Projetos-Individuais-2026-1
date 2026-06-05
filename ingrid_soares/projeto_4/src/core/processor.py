@@ -10,7 +10,7 @@ from ingrid_soares.projeto_4.src.extractors.parser import PDFParser
 from ingrid_soares.projeto_4.src.core.schemas import CompanyReport, Metric
 
 # Load environment variables
-load_dotenv(Path("ingrid-soares/projeto-4/.env"))
+load_dotenv(Path("ingrid_soares/projeto_4/.env"))
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 class UDAProcessor:

@@ -67,8 +67,7 @@ class IngestionPipeline:
             except Exception as e:
                 print(f"  [Error] Failed to process {filename}: {e}")
         
-        print(f"Finished {company_name}. Added {new_docs_count} new documents.
-")
+        print(f"Finished {company_name}. Added {new_docs_count} new documents.")
 
     def run_batch(self, companies: List[Dict[str, str]]):
         """Runs the pipeline for a list of companies."""

@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Query
 from typing import List, Optional
 from pathlib import Path
-from .database.database import get_db_connection
+from ingrid_soares.projeto_4.src.database.database import get_db_connection
 
 app = FastAPI(
     title="API de Conjuntura Habitacional",
@@ -23,7 +23,7 @@ def get_conjuntura(
     Consulta métricas estruturadas filtrando por empresa, ano e trimestre.
     """
     query = """
-        SELECT m.metric_name, m.metric_value, m.unit, d.company_name, d.year, d.quarter
+        SELECT m.metric_name, m.metric_value, m.unit, d.company_name, m.year, m.quarter
         FROM metrics m
         JOIN documents d ON m.document_id = d.id
         WHERE d.company_name LIKE ?
