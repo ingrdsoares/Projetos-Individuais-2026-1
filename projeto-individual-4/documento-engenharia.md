@@ -8,7 +8,7 @@ O sistema foi projetado para resolver o problema de fragmentação de dados não
 A ingestão é orientada a eventos (simulada por Polling). 
 - **Scraper:** Utiliza `BeautifulSoup` para varrer portais de RI e identificar links de PDF baseados em palavras-chave.
 - **Idempotência:** Implementada através do cálculo de Hash SHA-256 da URL do documento. Antes de qualquer download ou processamento, o sistema consulta o `catalog.db` para verificar se o hash já existe, evitando custos redundantes de API.
-- **Parsing:** O `PDFParser` converte o PDF em Markdown utilizando `PyMuPDF`. A escolha do Markdown visa preservar a estrutura de tabelas e a hierarquia do documento, facilitando a compreensão do LLM.
+- **Parsing:** O `PDFParser` converte o PDF em Markdown utilizando `PyMuPDF`. A solução implementa tanto o **Full-Scan** quanto o **Chunking Semântico**, onde o documento é segmentado em blocos baseados em palavras-chave (ex: 'Balanço', 'Resultados'), enviando apenas trechos relevantes para a LLM para otimizar custos de tokens e reduzir a latência.
 
 ### 1.2 Camada de Processamento (UDA Module)
 O processamento utiliza a técnica de **Full-Scan** (envio do texto integral por página) para garantir a captura de todas as métricas, dada a natureza concisa de prévias operacionais.
