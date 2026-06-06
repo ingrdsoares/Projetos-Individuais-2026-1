@@ -39,3 +39,11 @@ A camada de serviço é implementada com **FastAPI**, fornecendo endpoints REST 
 ## 4. Considerações de Resiliência
 
 O sistema é resiliente a mudanças de layout pois não depende de coordenadas fixas ou Regex. A extração baseia-se na compreensão semântica do LLM. Se uma empresa alterar a posição de uma tabela, o LLM ainda a identificará como "Tabela de Resultados" devido ao contexto textual.
+
+## 5. Garantia de Qualidade (QA)
+
+Para garantir a estabilidade do pipeline, foi implementada uma suíte de testes automatizados utilizando **pytest** em `src/tests/test_core.py`, cobrindo:
+- **Idempotência:** Validação de que a mesma URL não é registrada duas vezes no catálogo.
+- **Validação de Esquema:** Testes de integridade do Pydantic para garantir que o LLM forneça a estrutura correta.
+- **Saneamento do Scraper:** Verificação da detecção de links de PDF em portais de RI.
+

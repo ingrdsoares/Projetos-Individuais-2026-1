@@ -17,9 +17,10 @@ O projeto consiste na implementação de um Pipeline de Análise de Dados Não E
 |------------|---------------|
 | **Gatilho de Ingestão** | Polling de URLs de RI com detecção de novos PDFs |
 | **Idempotência** | Verificação de Hash SHA-256 da URL no Catálogo de Dados |
-| **Segmentação de PDF** | Estratégia Full-Scan via PyMuPDF (Conversão para Markdown) |
+| **Segmentação de PDF** | Estratégia de Full-Scan e Chunking Semântico via PyMuPDF |
 | **Motor de Extração** | LLM Gemini 1.5 Flash com Contrato Semântico (Pydantic) |
 | **Camada de Serviço** | API FastAPI com filtros por Empresa, Ano e Trimestre |
+| **Qualidade e Testes** | Suíte de testes unitários com Pytest para core e banco de dados |
 
 ---
 
