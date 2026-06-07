@@ -5,12 +5,12 @@ from typing import List
 import google.generativeai as genai
 from dotenv import load_dotenv
 
-from src.database.database import get_db_connection, mark_as_processed
-from src.extractors.parser import PDFParser
-from src.core.schemas import CompanyReport, Metric
+from ingrid_soares.projeto_4.src.database.database import get_db_connection, mark_as_processed
+from ingrid_soares.projeto_4.src.extractors.parser import PDFParser
+from ingrid_soares.projeto_4.src.core.schemas import CompanyReport, Metric
 
 # Load environment variables
-load_dotenv(Path(".env"))
+load_dotenv(Path("ingrid_soares/projeto_4/.env"))
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 class UDAProcessor:
