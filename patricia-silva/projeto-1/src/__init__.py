@@ -1,1 +1,0 @@
-# Pacote do agente educacional.
