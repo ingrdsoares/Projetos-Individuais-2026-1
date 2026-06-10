@@ -1,4 +1,7 @@
 import os
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
+
 from pathlib import Path
 from src.core.ingestion import IngestionPipeline
 from src.core.processor import UDAProcessor
