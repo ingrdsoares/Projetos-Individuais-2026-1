@@ -23,7 +23,7 @@ def main():
             print("Nada para processar")
         else:
             for doc in pending_docs:
-                processor.process_document(doc['id'], Path(f"ingrid_soares/projeto_4/data/pdfs/{doc['filename']}"))
+                processor.process_document(doc['id'], Path(f"data/pdfs/{doc['filename']}"))
     print("Pipeline Concluido")
 
 if __name__ == "__main__":
