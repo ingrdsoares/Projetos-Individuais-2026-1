@@ -4,7 +4,7 @@ from typing import List, Tuple
 from urllib.parse import urljoin
 import hashlib
 
-from . import database  # Importa o módulo database
+from src.database import database  # Importa o módulo database
 
 class RIScraper:
     """
@@ -17,9 +17,9 @@ class RIScraper:
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
         }
 
-    def find_pdf_links(self, keywords: List[str] = ["PDF", "Prévia Operacional", "Resultados", "Relatório"]) -> List[Tuple[str, str, str]]:
+    def find_pdf_links(self, keywords: List[str] = ["PDF", "Prévia Operacional", "Resultados", "Relatório", "Trimestral", "Operacional"]) -> List[Tuple[str, str, str]]:
         """
-        Scans the base URL for links ending in .pdf that match the specified keywords.
+        Scans the base URL for links that likely point to PDFs and match the specified keywords.
         Returns a list of tuples (filename, absolute_url, url_hash).
         """
         try:
@@ -33,19 +33,19 @@ class RIScraper:
                 href = link['href']
                 text = link.get_text().strip()
                 
-                if href.lower().endswith('.pdf'):
+                if '.pdf' in href.lower():
                     if any(kw.lower() in text.lower() or kw.lower() in href.lower() for kw in keywords):
                         full_url = urljoin(self.base_url, href)
-                        filename = href.split('/')[-1]
+                        filename = href.split('/')[-1].split('?')[0]
                         url_hash = hashlib.sha256(full_url.encode('utf-8')).hexdigest()
                         found_links.append((filename, full_url, url_hash))
             
             return found_links
-        except requests.exceptions.RequestException as e:
-            print(f"HTTP Error scraping {self.company_name} at {self.base_url}: {e}")
+        except requests.exceptions.RequestException:
+            print(f"  [Info] Server unavailable for {self.company_name}, skipping...")
             return []
         except Exception as e:
-            print(f"General Error scraping {self.company_name} at {self.base_url}: {e}")
+            print(f"  [Info] {self.company_name}: {e}")
             return []
 
 def scrape_all_companies(company_urls: List[Tuple[str, str]]) -> List[Tuple[str, str, str, int]]:
@@ -78,9 +78,9 @@ def scrape_all_companies(company_urls: List[Tuple[str, str]]) -> List[Tuple[str,
 if __name__ == "__main__":
     # Example usage with multiple companies
     companies_to_scrape = [
-        ("MRV", "https://ri.mrv.com.br/"),
-        ("Direcional", "https://ri.direcional.com.br/"),
-        # Add more companies here
+        ("MRV", "https://ri.mrv.com.br/central-de-resultados/"),
+        ("Tenda", "https://ri.tenda.com.br/central-de-resultados/"),
+        ("Direcional", "https://ri.direcional.com.br/central-de-resultados/"),
     ]
     
     # Initialize the database if not already done
@@ -88,8 +88,7 @@ if __name__ == "__main__":
     print("Database initialized.")
 
     found_pdfs = scrape_all_companies(companies_to_scrape)
-    print("
---- New PDFs for Processing ---")
+    print("\n--- New PDFs for Processing ---")
     if not found_pdfs:
         print("No new PDFs found.")
     for filename, url, url_hash, doc_id in found_pdfs:

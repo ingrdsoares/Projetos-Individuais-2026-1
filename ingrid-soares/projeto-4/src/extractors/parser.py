@@ -17,9 +17,7 @@ class PDFParser:
             markdown_text.append(text)
             markdown_text.append("---")
         doc.close()
-        return "
-
-".join(markdown_text)
+        return "\n".join(markdown_text)
 
     def get_semantic_chunks(self, file_path: Path, keywords: List[str] = None) -> List[str]:
         """
@@ -52,8 +50,7 @@ if __name__ == "__main__":
         path = Path("projeto-individual-4/exemplo_Boletim_Conjuntura_2025_3T.pdf")
         print("--- Full Scan (first 500 chars) ---")
         print(parser.to_markdown(path)[:500])
-        print("
---- Semantic Chunks Count ---")
+        print("\n--- Semantic Chunks Count ---")
         print(f"Chunks found: {len(parser.get_semantic_chunks(path))}")
     except Exception as e:
         print(f"Error: {e}")

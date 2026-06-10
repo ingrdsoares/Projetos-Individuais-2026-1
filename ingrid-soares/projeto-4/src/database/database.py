@@ -3,7 +3,7 @@ from pathlib import Path
 from datetime import datetime
 from typing import Optional, List, Tuple
 
-DB_PATH = Path("ingrid-soares/projeto-4/data/catalog.db")
+DB_PATH = Path("data/catalog.db")
 
 def get_db_connection():
     """Returns a connection to the SQLite database."""

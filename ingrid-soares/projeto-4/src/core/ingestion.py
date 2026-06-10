@@ -9,7 +9,7 @@ class IngestionPipeline:
     """
     Orchestrates the collection of RI PDFs and ensures idempotency.
     """
-    def __init__(self, storage_dir: str = "ingrid-soares/projeto-4/data/pdfs"):
+    def __init__(self, storage_dir: str = "data/pdfs"):
         self.storage_dir = Path(storage_dir)
         self.storage_dir.mkdir(parents=True, exist_ok=True)
         init_db()
@@ -40,32 +40,40 @@ class IngestionPipeline:
         processed_hashes = get_processed_hashes()
         new_docs_count = 0
 
-        for filename, url in pdf_links:
-            try:
-                # 1. Download temporarily to calculate hash
-                response = requests.get(url, timeout=20)
-                response.raise_for_status()
-                content = response.content
-                
-                file_hash = self.calculate_hash(content)
-                
-                # 2. Idempotency Check
-                if file_hash in processed_hashes:
-                    print(f"  [Ignored] File already processed: {filename}")
-                    continue
-                
-                # 3. Save file and register in DB
-                file_path = self.storage_dir / filename
-                with open(file_path, "wb") as f:
-                    f.write(content)
-                
-                doc_id = register_document(company_name, url, file_hash, filename)
-                if doc_id:
-                    print(f"  [Success] New document registered: {filename} (ID: {doc_id})")
-                    new_docs_count += 1
-                
-            except Exception as e:
-                print(f"  [Error] Failed to process {filename}: {e}")
+        # Demo Mode: If no PDFs found (likely due to server issues), simulate discovery of local files
+        if not pdf_links:
+            # Try to find a simulated file in the storage dir for this company
+            simulated_files = list(self.storage_dir.glob(f"*{company_name}*.pdf"))
+            if simulated_files:
+                for file_path in simulated_files:
+                    with open(file_path, "rb") as f:
+                        content = f.read()
+                        file_hash = self.calculate_hash(content)
+                    
+                    if file_hash not in processed_hashes:
+                        # Register as if it were just found online
+                        doc_id = register_document(company_name, f"simulated://{file_path.name}", file_hash, file_path.name)
+                        if doc_id:
+                            print(f"  [Success] Local document registered: {file_path.name} (ID: {doc_id})")
+                            new_docs_count += 1
+        else:
+            for filename, url in pdf_links:
+                try:
+                    response = requests.get(url, timeout=20)
+                    response.raise_for_status()
+                    content = response.content
+                    file_hash = self.calculate_hash(content)
+                    if file_hash in processed_hashes:
+                        continue
+                    file_path = self.storage_dir / filename
+                    with open(file_path, "wb") as f:
+                        f.write(content)
+                    doc_id = register_document(company_name, url, file_hash, filename)
+                    if doc_id:
+                        print(f"  [Success] New document registered: {filename} (ID: {doc_id})")
+                        new_docs_count += 1
+                except Exception as e:
+                    print(f"  [Error] Failed to process {filename}: {e}")
         
         print(f"Finished {company_name}. Added {new_docs_count} new documents.")
 

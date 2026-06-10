@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from pathlib import Path
 from typing import List
 import google.generativeai as genai
@@ -21,60 +22,83 @@ class UDAProcessor:
         self.model = genai.GenerativeModel('gemini-2.5-flash')
         self.parser = PDFParser()
 
-    def _generate_prompt(self, markdown_content: str) -> str:
-        """Creates the system prompt for the LLM."""
+    def _generate_prompt(self, content: str) -> str:
+        """Creates a strict system prompt for high-precision UDA extraction."""
         return f"""
-        Você é um especialista em extração de dados financeiros e operacionais do setor habitacional.
-        Sua tarefa é analisar o relatório fornecido em Markdown e extrair métricas precisas.
+        SISTEMA: Especialista em Extração de Dados Financeiros Habitacionais.
+        TAREFA: Analisar os trechos de relatório fornecidos e extrair métricas estruturadas.
 
-        DIRETRIZES RÍGIDAS:
-        1. Extraia apenas VALORES BRUTOS. Ignore porcentagens de variação destacadas pelo marketing.
-        2. Se uma métrica não estiver explicitamente no texto, defina o valor como null.
-        3. Identifique corretamente a Empresa, o Ano e o Trimestre.
-        4. Retorne a resposta EXCLUSIVAMENTE como um JSON válido seguindo a estrutura do contrato.
+        REGRAS CRÍTICAS de QUALIDADE:
+        1. VALORES ABSOLUTOS: Extraia apenas o valor bruto (ex: R$ 150 milhões). IGNORE porcentagens de variação (ex: 'crescimento de 10%').
+        2. TRATAMENTO de NULOS: Se a métrica não for encontrada explicitamente nos trechos, defina o valor como null. NÃO invente dados.
+        3. CONTEXTO TEMPORAL: Identifique com precisão a Empresa, o Ano e o Trimestre.
+        4. FORMATO: Responda EXCLUSIVAMENTE em JSON válido.
 
-        CONTRATO DE SAÍDA:
+        CONTRATO de SAÍDA:
         {{
           "company_name": "Nome da Empresa",
           "year": 2025,
           "quarter": "3T",
           "metrics": [
-            {{ "name": "Nome da Métrica", "value": 123.45, "unit": "R$ milhões" }},
-            ...
+            {{ "name": "Vendas Líquidas", "value": 123.45, "unit": "R$ milhões" }},
+            {{ "name": "Lançamentos", "value": 450, "unit": "unidades" }}
           ]
         }}
 
-        CONTEÚDO DO RELATÓRIO:
-        {markdown_content}
+        TRECHOS DO RELATÓRIO:
+        {content}
         """
 
     def process_document(self, document_id: int, file_path: Path):
         """
-        Processes a single PDF: Parse -> Gemini -> Save to DB.
+        Advanced UDA Process: Parse -> Semantic Chunking -> Gemini -> SQLite.
+        Implements retry logic for API Rate Limits (429).
         """
         print(f"Processing document ID {document_id}...")
         
         try:
-            # 1. PDF to Markdown
-            markdown_text = self.parser.to_markdown(file_path)
+            # 1. Semantic Chunking
+            chunks = self.parser.get_semantic_chunks(file_path)
+            content_to_analyze = (chr(10) + chr(10)).join(chunks)
             
-            # 2. LLM Extraction
-            prompt = self._generate_prompt(markdown_text)
-            response = self.model.generate_content(
-                prompt, 
-                generation_config={"response_mime_type": "application/json"}
-            )
+            if not content_to_analyze:
+                print(f"  [Warning] No relevant content found in document {document_id}.")
+                return
+
+            prompt = self._generate_prompt(content_to_analyze)
             
-            # 3. Parse and Validate with Pydantic
+            # Retry loop for Rate Limits (429)
+            max_retries = 3
+            retry_delay = 10 
+            response = None
+            
+            for attempt in range(max_retries):
+                try:
+                    response = self.model.generate_content(
+                        prompt, 
+                        generation_config={"response_mime_type": "application/json"}
+                    )
+                    break # Success!
+                except Exception as e:
+                    if "429" in str(e) or "quota" in str(e).lower():
+                        if attempt < max_retries - 1:
+                            print(f"  [Rate Limit] API quota reached. Retrying in {retry_delay}s... (Attempt {attempt+1}/{max_retries})")
+                            time.sleep(retry_delay)
+                            retry_delay *= 2
+                            continue
+                    raise e
+
+            # 2. Parse and Validate
             data = json.loads(response.text)
+            if isinstance(data, list):
+                data = data[0] if data else {}
+            
             report = CompanyReport(**data)
             
-            # 4. Save to Database
+            # 3. Save and Mark
             self._save_to_db(document_id, report)
-            
-            # 5. Mark as processed
             mark_as_processed(document_id)
-            print(f"  [Success] Document {document_id} processed and saved.")
+            print(f"  [Success] Document {document_id} processed. Extracted {len(report.metrics)} metrics.")
             
         except Exception as e:
             print(f"  [Error] Failed to process document {document_id}: {e}")
@@ -90,7 +114,5 @@ class UDAProcessor:
             conn.commit()
 
 if __name__ == "__main__":
-    # Simple test
     processor = UDAProcessor()
-    # Assuming doc_id 1 exists and is in the data folder
-    processor.process_document(1, Path("projeto-individual-4/exemplo_Boletim_Conjuntura_2025_3T.pdf"))
+    processor.process_document(1, Path("exemplo_Boletim_Conjuntura_2025_3T.pdf"))

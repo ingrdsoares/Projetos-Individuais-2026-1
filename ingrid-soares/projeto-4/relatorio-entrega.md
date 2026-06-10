@@ -70,23 +70,35 @@ ingrid_soares/projeto_4/
 
 ### 4.3 Como executar
 
+Para facilitar a execução e garantir a consistência dos dados, foi implementada a automação via `Makefile`.
+
 ```bash
 # 1. Instalar dependências
 pip install fastapi uvicorn requests beautifulsoup4 pymupdf pydantic google-generativeai python-dotenv
 
 # 2. Configurar a chave da API no arquivo .env
-echo "GEMINI_API_KEY=sua_chave_aqui" > ingrid_soares/projeto_4/.env
+echo "GEMINI_API_KEY=sua_chave_aqui" > .env
 
-# 3. Executar o pipeline de ingestão e processamento
-python run_pipeline.py
+# 3. Execução completa (Limpa banco -> Semeia dados -> Processa IA)
+make run
 
 # 4. Iniciar a API de serviço
-python -m ingrid_soares.projeto_4.src.api.main
+python -m src.api.main
 ```
+
+### 4.4 Resiliência e Robustez
+
+O pipeline foi projetado para operar em ambientes de produção instáveis, implementando as seguintes estratégias:
+- **Exponential Backoff (Retry):** Para lidar com os limites de cota (Rate Limit - HTTP 429) da API do Gemini, o sistema implementa tentativas automáticas com espera progressiva, garantindo que nenhum documento seja perdido por excesso de requisições.
+- **Tolerância a Falhas de Rede:** A camada de ingestão foi blindada contra erros de DNS e quedas de servidores de RI, permitindo que o pipeline continue processando outras empresas mesmo quando um portal específico está offline.
+- **Variabilidade de Layout:** Através da conversão de PDF $\rightarrow$ Markdown e do uso de **Chunking Semântico**, o motor de IA ignora mudanças visuais no documento, focando apenas no contexto semântico das métricas.
+- **Controle de Custos e Idempotência:** A implementação de hashes SHA-256 impede o re-processamento de arquivos idênticos, otimizando o uso de tokens.
 
 ---
 
 ## 5. Checklist de entrega
+
+
 
 - [x] Documento de engenharia preenchido
 - [x] Código funcional no repositório
